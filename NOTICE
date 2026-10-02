@@ -1,0 +1,38 @@
+WHOI Cable with a free-floating surface buoy (cable-free)
+=========================================================
+
+This repository is a modified version of WHOI Cable, a program for the static
+and dynamic analysis of oceanographic cable structures.
+
+  Original work:  WHOI Cable, https://github.com/jgobat/cable
+                  Copyright (C) 1997-2016 Woods Hole Oceanographic Institution (WHOI)
+                  Copyright (C) 2008-2016 Jason Gobat
+                  Copyright (C) 1993-1997 Jason I. Gobat and Darren C. Atkinson
+
+  Modified work:  https://github.com/robertowainsmith/whoi_cable
+                  Copyright (C) 2026 <Your Name>
+
+WHOI Cable is free software, distributed under the GNU General Public License,
+version 3 or (at your option) any later version; see COPYING. This modified
+version is distributed under the same terms, WITHOUT ANY WARRANTY; without even
+the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+Modifications
+-------------
+The original WHOI Cable source files in this repository are unchanged. The
+modifications are:
+
+2026-09  patches/cable-free-surface-buoy.patch modifies solver/dynamic_2d.c,
+         solver/waves.c and include/model.h. In 2D dynamic runs of surface
+         moorings with forcing-method = morison, the surface buoy's draft,
+         buoyancy, drag area, current sampling depth and wind drag now follow
+         the buoy's position relative to the local wave surface, so the buoy
+         can be pulled under and resurface. Adds WaveSurfaceElevation() to
+         solver/waves.c. scripts/build.sh applies the patch at build time to
+         make the program cable-free; the program cable is built unmodified.
+         See docs/PATCH.md.
+
+2026-10  Added build and run scripts (scripts/), a conda environment
+         (environment.yml), example input files (cases/), a plotting notebook
+         (notebooks/) and documentation (README.md, docs/SETUP.md,
+         docs/PATCH.md).

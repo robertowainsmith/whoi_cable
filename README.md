@@ -108,3 +108,5 @@ repository are distributed under the same licence.
 If you use WHOI Cable in published work, cite the Cable manual and
 Gobat & Grosenbaugh's papers (listed in [docs/PATCH.md](docs/PATCH.md)), and
 say that the free-floating surface buoy patch was used.
+
+See NOTICE for the original copyright holders and a dated list of the modifications.
