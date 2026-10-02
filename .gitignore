@@ -1,0 +1,9 @@
+# build products and model output
+build/
+runs/
+.ipynb_checkpoints/
+*.o
+*.cab
+*.mat
+*.mp4
+*.avi

@@ -1,0 +1,113 @@
+--- a/solver/waves.c	2016-10-21 04:27:48.000000000 +0000
++++ b/solver/waves.c	2026-09-24 05:18:29.634421412 +0000
+@@ -898,6 +898,51 @@
+    return;
+ }
+ 
++
++/*
++ * WaveSurfaceElevation: free-surface elevation (m, positive up) at horizontal
++ * position y, consistent with WaveSurfaceVelocity (d eta/dt = surface velocity).
++ * Added for the free-floating surface buoy option (surface problem + morison).
++ */
++double WaveSurfaceElevation (double t, double y)
++{
++   double  factor;
++   double  eta = 0.0;
++   double  om, k;
++   int     i;
++
++   if (problem -> dynstat)
++      return 0.0;
++
++   if (analysis -> ramp_time && t < analysis -> ramp_time)
++      factor = t / analysis -> ramp_time;
++   else
++      factor = 1.0;
++
++   if (environment -> input_type == Regular) {
++      for (i = 0 ; i < environment -> num_components [2] ; i++) {
++         k  = environment -> k [2][i];
++         om = environment -> omega [2][i];
++         eta += factor*environment -> amplitude [2][i]
++                *cos(k*y - om*t - environment -> phase [2][i]);
++      }
++   }
++   else if (environment -> input_type == Random) {
++      if (!initialized_random)
++         InitializeRandom ( );
++
++      if (environment -> amplitude [2][0]) {
++         om = om_0;
++         for (i = 0 ; i < nfreq ; i++) {
++            eta += factor*rand_a [i][2]*cos(rand_k [i]*y - om*t - rand_phi [i]);
++            om += d_om;
++         }
++      }
++   }
++
++   return eta;
++}
++
+ void InputVelocity (t, x, y, z, u, v, w)
+    double	 t;
+    double	 x; 
+--- a/solver/dynamic_2d.c	2016-10-21 04:27:48.000000000 +0000
++++ b/solver/dynamic_2d.c	2026-09-24 05:18:29.634832286 +0000
+@@ -783,6 +783,26 @@
+             Uw = Vw = 0.0;
+             Udw = Vdw = 0.0;
+          }
++         else if (problem -> type == Surface) {
++            /*
++             * Free-floating surface buoy (modification): buoyancy, drag area
++             * and current depth follow the instantaneous draft relative to
++             * the local wave surface, so the buoy can be pulled under and
++             * resurface. Buoyancy() and ProjectedArea() saturate at full
++             * submergence.
++             */
++            double eta_s = WaveSurfaceElevation (tm, n -> y);
++            buoy -> draft = environment -> surface + eta_s - n -> x;
++            if (buoy -> draft < 0.0)
++               buoy -> draft = 0.0;
++            bdr = 0.5*environment -> rho*buoy -> Cdn*
++                  ProjectedArea(buoy, buoy -> draft);
++            barma = buoy -> Marma;
++
++            WaveParticleVelocity (tm, n -> x, n -> y, 0.0, &Uw, &Vw, NULL);
++            WaveParticleAcceleration (tm, n -> x, n -> y, 0.0,
++				      &Udw, &Vdw, NULL);
++         }
+          else {
+             buoy -> draft = buoy -> max_draft; // added for drifter work
+             bdr = buoy -> Mdr;
+@@ -794,7 +814,17 @@
+          }
+ 
+ 
+-         if (problem -> type == Surface || problem -> type == Drifter) {
++         if (problem -> type == Surface && forcing == Morison
++             && !problem -> dynstat) {
++            double xc = n -> x + 0.5*(buoy -> draft < buoy -> max_draft ?
++                                      buoy -> draft : buoy -> max_draft);
++            if (buoy -> draft <= buoy -> max_draft)
++               WindDrag (tm, buoy, &wind_drag, NULL);
++            else
++               wind_drag = 0.0;           /* fully submerged: no wind */
++            Current (tm, xc, n -> y, n -> z, &uack, &vack, NULL);
++         }
++         else if (problem -> type == Surface || problem -> type == Drifter) {
+ 	        WindDrag (tm, buoy, &wind_drag, NULL);
+             Current (tm, environment->surface, n -> y, n -> z, &uack, &vack, NULL); 
+          }
+--- a/include/model.h	2016-10-21 04:27:48.000000000 +0000
++++ b/include/model.h	2026-09-24 05:18:29.634616384 +0000
+@@ -595,6 +595,8 @@
+    double *		/* w return		*/
+ );
+ 
++extern double WaveSurfaceElevation (double, double);
++
+ extern void InputVelocity (
+    double,		/* time			*/
+    double,		/* x			*/

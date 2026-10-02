@@ -1,0 +1,8 @@
+# keep Unix line endings so scripts and inputs work in WSL even if the
+# repository is checked out or edited on Windows
+*.sh    text eol=lf
+*.cbl   text eol=lf
+*.patch text eol=lf
+*.ipynb text eol=lf
+*.md    text eol=lf
+*.yml   text eol=lf
