@@ -258,7 +258,8 @@ rm -rf ~/whoi_cable
 | conda asks you to accept Terms of Service for `repo.anaconda.com` channels | The environment itself only uses conda-forge. Accept with the `conda tos accept ...` command conda prints, or remove the defaults channel from your conda settings with `conda config --remove channels defaults` |
 | `/usr/bin/env: 'bash\r': No such file or directory` | The scripts have Windows line endings, usually because the repository was cloned or edited on the Windows side. Clone it inside WSL (step 3), or run `sed -i 's/\r$//' scripts/*.sh cases/*.cbl` |
 | `Permission denied` running a script | `chmod +x scripts/*.sh` |
-| `The environment's C compiler isn't set up` | `conda deactivate`, then `conda activate whoi-cable` again. If it persists, rerun `scripts/setup_env.sh` |
+| `No C compiler found in the whoi-cable environment` | The environment is incomplete, often because a download failed or the disk filled during setup. Recreate it: `conda deactivate`, `conda env remove -n whoi-cable -y`, `conda clean --all -y`, then `scripts/setup_env.sh` |
+| `Warning: no compiler found in the whoi-cable environment; using the system's ...` | The build still works, with the system compiler. To use conda's compiler, rerun `scripts/setup_env.sh` |
 | `cable-free: command not found` | Activate `whoi-cable`; if it's still missing, run `scripts/build.sh` |
 | **Python (whoi-cable)** isn't in Jupyter's kernel list | Rerun `scripts/setup_env.sh`, then restart Jupyter. Jupyter must be running inside WSL: a Jupyter installed on Windows can't see WSL kernels |
 | The notebook prints `Note: this kernel runs Python from ...` | It's using another kernel. Choose **Kernel → Change Kernel → Python (whoi-cable)** |
