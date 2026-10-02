@@ -33,14 +33,14 @@ cd "$OUT"
 
 echo "Running $CASE with $CABLE $* ..."
 start=$(date +%s)
-if ! "$CABLE" -in "$CASE.cbl" -out "$CASE.cab" -terminals -sample 0.1 -snap_dt 0.2 -quiet "$@" > "$CASE.log" 2>&1; then
+if ! "$CABLE" -in "$CASE.cbl" -out "$CASE.cab" -terminals -sample 0.1 -snap_dt 0.2 -auto -quiet "$@" > "$CASE.log" 2>&1; then
     echo "cable-free failed; last lines of $OUT/$CASE.log:" >&2
     tail -5 "$CASE.log" >&2
     exit 1
 fi
 if grep -qi "never converged\|could not get static" "$CASE.log"; then
     echo "WARNING: the static solve did not converge (see $CASE.log)." >&2
-    echo "         Raise static-outer-iterations, or add -auto if the buoy starts at the surface." >&2
+    echo "         Raise static-outer-iterations, or add -auto to run_case.sh if the buoy starts at the surface." >&2
 fi
 "$RES2MAT" -in "$CASE.cab" -out "$CASE.mat" -totals > /dev/null
 echo "Done in $(( $(date +%s) - start )) s. Output in $OUT"

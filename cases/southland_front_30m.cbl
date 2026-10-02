@@ -52,7 +52,7 @@ Analysis Parameters
 
 Environment
     input-type       = regular
-    x-current = (0.0, 0.7) (30.0, 0.1)    /* 0.7 m/s at surface to 0.1 m/s at seabed */
+    x-current = (0.0, 0.15) (30.0, 0.15)    /* 0.7 m/s at surface to 0.1 m/s at seabed */
     x-wind           = 5.0
     rho              = 1027
     gravity          = 9.81
@@ -60,7 +60,7 @@ Environment
     bottom-stiffness = 100.0
     bottom-damping   = 1.0
     forcing-method   = morison
-    x-wave = (1.0, 8.0, 0.0)       /* amplitude 1 m (2 m waves), period 8 s */
+    x-wave = (1.0, 12.0, 0.0)       /* amplitude 1 m (2 m waves), period 8 s */
 
 Buoys
    /* Polyform LD-1, simplified: eye end tapers to full 0.218 m diameter,
@@ -76,6 +76,13 @@ Anchors
    clump    color = red
 
 Materials
+
+chain_8mm       EA = 2.4e+07     EI = 10.0          GJ = 0.1
+                 m = 1.4                           wet = 11.9
+                 d = 0.031       Cdt = 0.01        Cdn = 0.5
+                 Cmt = 1.1       Cmn = 2.0
+                 comment = "8 mm chain, approximate"
+
 polypro_12mm    EA = 1.2e+05     EI = 0.1           GJ = 0.1
                  m = 0.068                         wet = -0.086
                  d = 0.012       Cdt = 0.01        Cdn = 1.5
@@ -85,6 +92,11 @@ polypro_12mm    EA = 1.2e+05     EI = 0.1           GJ = 0.1
 Layout
    terminal = {
       anchor = clump
+   }
+   segment = {
+       length = 3.0
+       material = chain_8mm
+       nodes = (7, 1.0)
    }
    segment = {
        length = 40.0
