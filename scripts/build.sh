@@ -84,11 +84,13 @@ for tool in "$CC_FOUND" "$AR_CMD" "$RANLIB_CMD" make flex bison patch; do
         echo "Missing '${tool:-ar/ranlib}' in the $ENV_NAME environment. Run scripts/setup_env.sh." >&2; exit 1; }
 done
 
-# Conda's compiler doesn't search the environment for headers and libraries by
-# default, and Cable's Makefiles set their own CFLAGS, so the environment's
-# include and lib folders go on the compiler command. The rpath lets the
-# programs find the environment's zlib when they run.
-CC_CMD="$CC_FOUND -isystem $CONDA_PREFIX/include -L$CONDA_PREFIX/lib -Wl,-rpath,$CONDA_PREFIX/lib"
+# Cable is written in older C. GCC 15 and later default to the C23 standard,
+# under which some of its declarations are errors, so ask for C17 (with GNU
+# extensions). Conda's compiler also doesn't search the environment for headers
+# and libraries by default, and Cable's Makefiles set their own CFLAGS, so the
+# environment's include and lib folders go on the compiler command. The rpath
+# lets the programs find the environment's zlib when they run.
+CC_CMD="$CC_FOUND -std=gnu17 -isystem $CONDA_PREFIX/include -L$CONDA_PREFIX/lib -Wl,-rpath,$CONDA_PREFIX/lib"
 
 run_make () {   # $1 = build folder, $2 = compiler command
     (cd "$1" && make OS=nox CC="$2" LD="$2" AR="$AR_CMD cq" RANLIB="$RANLIB_CMD" \
