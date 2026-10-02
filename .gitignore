@@ -7,3 +7,4 @@ runs/
 *.mat
 *.mp4
 *.avi
+*:Zone.Identifier
