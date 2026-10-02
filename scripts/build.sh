@@ -23,25 +23,72 @@ if [ "${CONDA_DEFAULT_ENV:-}" != "$ENV_NAME" ] || [ -z "${CONDA_PREFIX:-}" ]; th
     echo "(If it doesn't exist yet, run scripts/setup_env.sh.)" >&2
     exit 1
 fi
-if [ -z "${CC:-}" ]; then
-    echo "The environment's C compiler isn't set up (CC is empty)." >&2
-    echo "Try:  conda deactivate && conda activate $ENV_NAME" >&2
+PREFIX="${PREFIX:-$CONDA_PREFIX/bin}"
+ENV_BIN="$CONDA_PREFIX/bin"
+
+# --- find the C compiler -----------------------------------------------------
+# Normally activating the environment sets CC to conda's compiler. If it
+# hasn't (CC empty, or pointing at something that doesn't exist), look for the
+# compiler in the environment itself, and only as a last resort use the system
+# compiler.
+find_cc () {
+    if [ -n "${CC:-}" ] && command -v "$CC" >/dev/null; then
+        echo "$CC"; return
+    fi
+    local c
+    for c in "$ENV_BIN"/*-conda-linux-gnu-cc "$ENV_BIN"/*-conda-linux-gnu-gcc \
+             "$ENV_BIN"/gcc "$ENV_BIN"/cc; do
+        [ -x "$c" ] && { echo "$c"; return; }
+    done
+    for c in gcc cc; do
+        command -v "$c" >/dev/null && { echo "SYSTEM:$(command -v "$c")"; return; }
+    done
+}
+CC_FOUND="$(find_cc || true)"
+if [ -z "$CC_FOUND" ]; then
+    echo "No C compiler found in the $ENV_NAME environment (or on the system)." >&2
+    echo "The environment is probably incomplete. Recreate it:" >&2
+    echo "  conda deactivate; conda env remove -n $ENV_NAME -y; conda clean --all -y" >&2
+    echo "  scripts/setup_env.sh; conda activate $ENV_NAME; scripts/build.sh" >&2
     exit 1
 fi
-PREFIX="${PREFIX:-$CONDA_PREFIX/bin}"
-AR_CMD="${AR:-ar}"
-RANLIB_CMD="${RANLIB:-ranlib}"
+if [ "${CC_FOUND#SYSTEM:}" != "$CC_FOUND" ]; then
+    CC_FOUND="${CC_FOUND#SYSTEM:}"
+    echo "Warning: no compiler found in the $ENV_NAME environment; using the system's $CC_FOUND." >&2
+    echo "         Rerun scripts/setup_env.sh to install conda's compiler." >&2
+fi
+if [ "${CC:-}" != "$CC_FOUND" ]; then
+    echo "Using C compiler: $CC_FOUND"
+fi
 
-for tool in "$CC" "$AR_CMD" "$RANLIB_CMD" make flex bison patch; do
-    command -v "$tool" >/dev/null || {
-        echo "Missing '$tool' in the $ENV_NAME environment. Run scripts/setup_env.sh." >&2; exit 1; }
+# --- find ar and ranlib to match ---------------------------------------------
+# conda names them like the compiler (e.g. x86_64-conda-linux-gnu-ar)
+find_tool () {   # $1 = current value (AR or RANLIB), $2 = tool name
+    if [ -n "$1" ] && command -v "${1%% *}" >/dev/null; then echo "$1"; return; fi
+    local base prefix
+    base="$(basename "$CC_FOUND")"
+    case "$base" in
+        *-cc)  prefix="${base%cc}" ;;
+        *-gcc) prefix="${base%gcc}" ;;
+        *)     prefix="" ;;
+    esac
+    if [ -n "$prefix" ] && [ -x "$ENV_BIN/$prefix$2" ]; then echo "$ENV_BIN/$prefix$2"; return; fi
+    if [ -x "$ENV_BIN/$2" ]; then echo "$ENV_BIN/$2"; return; fi
+    command -v "$2" || true
+}
+AR_CMD="$(find_tool "${AR:-}" ar)"
+RANLIB_CMD="$(find_tool "${RANLIB:-}" ranlib)"
+
+for tool in "$CC_FOUND" "$AR_CMD" "$RANLIB_CMD" make flex bison patch; do
+    { [ -n "$tool" ] && command -v "$tool" >/dev/null; } || {
+        echo "Missing '${tool:-ar/ranlib}' in the $ENV_NAME environment. Run scripts/setup_env.sh." >&2; exit 1; }
 done
 
 # Conda's compiler doesn't search the environment for headers and libraries by
 # default, and Cable's Makefiles set their own CFLAGS, so the environment's
 # include and lib folders go on the compiler command. The rpath lets the
 # programs find the environment's zlib when they run.
-CC_CMD="$CC -isystem $CONDA_PREFIX/include -L$CONDA_PREFIX/lib -Wl,-rpath,$CONDA_PREFIX/lib"
+CC_CMD="$CC_FOUND -isystem $CONDA_PREFIX/include -L$CONDA_PREFIX/lib -Wl,-rpath,$CONDA_PREFIX/lib"
 
 run_make () {   # $1 = build folder, $2 = compiler command
     (cd "$1" && make OS=nox CC="$2" LD="$2" AR="$AR_CMD cq" RANLIB="$RANLIB_CMD" \
