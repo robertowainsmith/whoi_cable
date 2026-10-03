@@ -106,6 +106,11 @@ mkdir -p "$HOME/.cable"
 for f in "$REPO"/gui/database/*; do
     [ -e "$HOME/.cable/$(basename "$f")" ] || cp "$f" "$HOME/.cable/"
 done
+# The shipped prefs.ini was written for the old Windows installer and points the
+# GUI at a Windows C preprocessor; use Linux's instead (and Unix line endings)
+if [ -f "$HOME/.cable/prefs.ini" ] && grep -q '^cpp=.*\.exe' "$HOME/.cable/prefs.ini"; then
+    sed -i -e 's/\r$//' -e 's|^cpp=.*|cpp=/usr/bin/cpp|' "$HOME/.cable/prefs.ini"
+fi
 
 echo
 echo "Installed to $BIN: wcable, wcable-free"

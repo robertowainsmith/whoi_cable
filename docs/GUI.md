@@ -123,6 +123,7 @@ reads.
 | `GtkExtra build failed` | Look at the end of `build/gtkextra.log`. Delete `~/.local/share/whoi-cable-gui` and `build/gtkextra-src`, then run `scripts/build_gui.sh` again |
 | `Build failed in gui` (or `solver`, `model`, `results`) | Look at the first `error:` line in `build/gui-stock/build.log` or `build/gui-free/build.log` |
 | `database(1): Unable to open ~/.cable/material.db` | The databases are missing. Rerun `scripts/build_gui.sh`, or copy them: `mkdir -p ~/.cable && cp gui/database/* ~/.cable/` |
+| `program c:\Program Files\Cable\cpp.exe does not exist, pre-processing disabled` | The GUI's settings still point to the old Windows preprocessor. Fix them with `sed -i -e 's/\r$//' -e 's|^cpp=.*|cpp=/usr/bin/cpp|' ~/.cable/prefs.ini` (newer versions of `build_gui.sh` do this for you) |
 | `wcable: command not found` | Run `source ~/.bashrc`, or open a new terminal |
 | The GUI is tiny or blurry on a high-resolution screen | Start it with scaling, e.g. `GDK_SCALE=2 wcable-free &` |
 | Windows open off-screen or behind others | Use Alt+Tab, or the program's icon on the Windows taskbar |
