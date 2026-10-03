@@ -1,0 +1,107 @@
+problem description
+    title = "Southland Front, 30 m: LD-1 low drag buoy, 40 m polypro"
+     type = surface
+
+analysis parameters
+    static-solution      = relaxation
+    static-initial-guess = catenary
+    static-iterations    = 20000
+    static-relaxation    = 0.1
+    static-tolerance     = 0.001
+    relax-adapt-up       = 1.02
+    relax-adapt-down     = 1.1
+    static-outer-iterations = 1000
+    static-outer-relaxation = 0.98
+    static-outer-tolerance  = 0.01
+    dynamic-iterations  = 15
+    dynamic-relaxation  = 1
+    dynamic-tolerance   = 1e-06
+    time-step           = 0.005
+    duration            = 210
+    ramp-time           = 16
+    dynamic-integration = spatial
+    dynamic-rho         = -0.5
+    dynamic-alpha-k     = 0.333333
+    dynamic-alpha-m     = 0.166667
+    dynamic-gamma       = 0.666667
+
+environment
+    forcing-method     = morison
+    input-type         = regular
+    rho                = 1027
+    gravity            = 9.81
+    depth              = 30
+    bottom-stiffness   = 100
+    bottom-damping     = 1
+    x-wave             = (1,12,0) 
+    current-scale      = 1.000000
+    x-current-scale    = 1.000000
+    y-current-scale    = 1.000000
+    z-current-scale    = 1.000000
+    x-current           = (0, 0.15) (30, 0.15)
+    x-wind              = 5
+
+layout
+    terminal = {
+        anchor = clump
+    }
+    segment = { /* 1 */
+        length   = 3
+        material = chain_8mm
+        nodes    = (7, 1)
+    } /* 7, 3 */
+    segment = { /* 2 */
+        length   = 40
+        material = polypro_12mm
+        nodes    = (41, 1)
+    } /* 48, 43 */
+    terminal = {
+        buoy = ld1
+    }
+
+materials
+  chain_8mm
+    EA    = 2.4e+07
+    EI    = 10
+    GJ    = 0.1
+    d     = 0.031
+    A     = 0.000754768
+    m     = 1.4
+    w     = 13.734
+    wet   = 11.9
+    amn   = 0.775146
+    amt   = 0.0775146
+    Cmn   = 2
+    Cmt   = 1.1
+    Cdn   = 7.95925
+    Cdt   = 0.500094
+  polypro_12mm
+    EA    = 120000
+    EI    = 0.1
+    GJ    = 0.1
+    d     = 0.012
+    A     = 0.000113097
+    m     = 0.068
+    w     = 0.66708
+    wet   = -0.086
+    amn   = 0.116151
+    amt   = 0.0116151
+    Cmn   = 2
+    Cmt   = 1.1
+    Cdn   = 9.243
+    Cdt   = 0.193585
+
+buoys
+  ld1
+    m        = 1.1
+    buoyancy = 142.913
+    Cdt      = 0.8
+    Cdn      = 0.8
+    Cdw      = 1
+    diameters = (0, 0.05) (0.1, 0.218) (0.38, 0.218) (0.483, 0.1) 
+
+anchors
+  clump
+    color = red
+
+end

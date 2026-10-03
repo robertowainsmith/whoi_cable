@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "designer_version": "1.0.0",
+  "project": {
+    "schema_version": 1,
+    "name": "southland_front_30m",
+    "title": "Southland Front, 30 m: LD-1 low drag buoy, 40 m polypro",
+    "type": "surface",
+    "anchor": "clump",
+    "buoy": "ld1",
+    "segments": [
+      {
+        "material": "chain_8mm",
+        "length": 3.0,
+        "nodes": 7,
+        "connector": null,
+        "attachments": []
+      },
+      {
+        "material": "polypro_12mm",
+        "length": 40.0,
+        "nodes": 41,
+        "connector": null,
+        "attachments": []
+      }
+    ],
+    "analysis": {
+      "static-relaxation": 0.1,
+      "static-iterations": 20000.0,
+      "static-tolerance": 0.001,
+      "relax-adapt-up": 1.02,
+      "relax-adapt-down": 1.1,
+      "static-outer-iterations": 1000.0,
+      "static-initial-guess": "catenary",
+      "static-solution": "relaxation",
+      "static-outer-relaxation": 0.98,
+      "static-outer-tolerance": 0.01,
+      "duration": 210.0,
+      "ramp-time": 16.0,
+      "time-step": 0.005,
+      "dynamic-relaxation": 1.0,
+      "dynamic-iterations": 15.0,
+      "dynamic-tolerance": 1e-06
+    },
+    "environment": {
+      "depth": 30.0,
+      "rho": 1027.0,
+      "gravity": 9.81,
+      "x-wind": 5.0,
+      "bottom-stiffness": 100.0,
+      "bottom-damping": 1.0,
+      "forcing-method": "morison",
+      "input-type": "regular"
+    },
+    "current": [
+      [
+        0.0,
+        0.15
+      ],
+      [
+        30.0,
+        0.15
+      ]
+    ],
+    "wave": [
+      2.0,
+      12.0,
+      0.0
+    ],
+    "modulation": "",
+    "run": {
+      "solver": "cable-free",
+      "static_only": false,
+      "auto": true,
+      "sample": 0.1,
+      "snap_dt": 0.2
+    }
+  },
+  "parts": {
+    "Materials": {
+      "chain_8mm": {
+        "properties": {
+          "EA": 24000000.0,
+          "EI": 10.0,
+          "GJ": 0.1,
+          "m": 1.4,
+          "wet": 11.9,
+          "d": 0.031,
+          "Cdt": 0.01,
+          "Cdn": 0.5,
+          "Cmt": 1.1,
+          "Cmn": 2.0,
+          "comment": "8 mm chain, approximate"
+        },
+        "source": "Imported .cbl"
+      },
+      "polypro_12mm": {
+        "properties": {
+          "EA": 120000.0,
+          "EI": 0.1,
+          "GJ": 0.1,
+          "m": 0.068,
+          "wet": -0.086,
+          "d": 0.012,
+          "Cdt": 0.01,
+          "Cdn": 1.5,
+          "Cmt": 1.1,
+          "Cmn": 2.0,
+          "comment": "12 mm 3-strand polypropylene, floats, approximate"
+        },
+        "source": "Imported .cbl"
+      }
+    },
+    "Connectors": {},
+    "Buoys": {
+      "ld1": {
+        "properties": {
+          "type": "axisymmetric",
+          "diameters": [
+            [
+              0.0,
+              0.05
+            ],
+            [
+              0.1,
+              0.218
+            ],
+            [
+              0.38,
+              0.218
+            ],
+            [
+              0.483,
+              0.1
+            ]
+          ],
+          "m": 1.1,
+          "Cdn": 0.8,
+          "Cdt": 0.8,
+          "Cdw": 1.0
+        },
+        "source": "Imported .cbl"
+      }
+    },
+    "Anchors": {
+      "clump": {
+        "properties": {
+          "color": "red"
+        },
+        "source": "Imported .cbl"
+      }
+    }
+  }
+}

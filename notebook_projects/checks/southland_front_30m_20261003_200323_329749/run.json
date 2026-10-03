@@ -1,0 +1,15 @@
+{
+  "command": [
+    "/home/smiro41p/whoi_cable/build/free/cli/cable",
+    "-in",
+    "/home/smiro41p/whoi_cable/notebook_projects/checks/southland_front_30m_20261003_200323_329749/southland_front_30m.cbl",
+    "-out",
+    "/home/smiro41p/whoi_cable/notebook_projects/checks/southland_front_30m_20261003_200323_329749/southland_front_30m.cab",
+    "-nocpp",
+    "-quiet",
+    "-debug"
+  ],
+  "cwd": "/home/smiro41p/whoi_cable/notebook_projects/checks/southland_front_30m_20261003_200323_329749",
+  "raw_mode": false,
+  "started": "2026-10-03T20:03:23.335352"
+}
