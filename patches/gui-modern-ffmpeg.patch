@@ -1,0 +1,232 @@
+Port WHOI Cable's GUI movie export (gui/pixbuf2mpeg.c) to the current FFmpeg
+encoding API. The original used avcodec_encode_video(), avcodec_alloc_frame(),
+CODEC_ID_* and PIX_FMT_* names, all removed from FFmpeg. Output is unchanged:
+raw MPEG-1 video at 24 frames per second. Used by scripts/build_gui.sh.
+
+--- a/gui/pixbuf2mpeg.c
++++ b/gui/pixbuf2mpeg.c
+@@ -104,69 +104,68 @@
+     }
+ }
+ 
++/* Ported to the FFmpeg send/receive encoding API (FFmpeg 4 and later); the
++   original used functions removed from FFmpeg. Output is still raw MPEG-1. */
++
+ typedef struct {
+-    AVCodec        *codec;
++    const AVCodec  *codec;
+     AVCodecContext *ctxt;
+     FILE           *fp;
+     AVFrame        *picture;
+-    uint8_t        *outbuf;
+-    int             outbuf_size;
++    AVPacket       *pkt;
++    uint8_t        *yuv;          /* contiguous YUV 4:2:0 image from the pixbuf */
++    size_t          yuv_size;
++    int64_t         next_pts;
+ } ChartMovie;
+-    
++
++static void
++encode_frame(ChartMovie *m, AVFrame *frame)
++{
++    if (avcodec_send_frame(m -> ctxt, frame) < 0)
++        return;
++    while (avcodec_receive_packet(m -> ctxt, m -> pkt) >= 0) {
++        fwrite(m -> pkt -> data, 1, m -> pkt -> size, m -> fp);
++        av_packet_unref(m -> pkt);
++    }
++}
++
+ int 
+ InitializeMovie(ChartMovie *m, char *filename, int width, int height)
+ {
+-    int size;
++    memset(m, 0, sizeof(ChartMovie));
+ 
+-    // avcodec_init();         // must be called before using avcodec lib 
+-    avcodec_register_all(); // register all codecs
+-
+-    /* find the mpeg1 video encoder */
+-    m -> codec = avcodec_find_encoder(CODEC_ID_MPEG1VIDEO);
+-    if (!m -> codec) {
+-        fprintf(stderr, "codec not found\n");
++    m -> codec = avcodec_find_encoder(AV_CODEC_ID_MPEG1VIDEO);
++    if (!m -> codec)
+         return 1;
+-    }
+ 
+-    m -> ctxt = avcodec_alloc_context3(m->codec);
+-    m -> picture = avcodec_alloc_frame();
++    m -> ctxt = avcodec_alloc_context3(m -> codec);
++    m -> picture = av_frame_alloc();
++    m -> pkt = av_packet_alloc();
++    if (!m -> ctxt || !m -> picture || !m -> pkt)
++        return 1;
+ 
+-    /* put sample parameters */
+     m -> ctxt -> strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
+     m -> ctxt -> bit_rate = 400000;
++    m -> ctxt -> width = width & ~1;          /* 4:2:0 needs even sizes */
++    m -> ctxt -> height = height & ~1;
++    m -> ctxt -> time_base = (AVRational){1,24}; /* frames per second */
++    m -> ctxt -> framerate = (AVRational){24,1};
++    m -> ctxt -> gop_size = 10;               /* one intra frame every ten frames */
++    m -> ctxt -> max_b_frames = 1;
++    m -> ctxt -> pix_fmt = AV_PIX_FMT_YUV420P;
+ 
+-    /* resolution must be a multiple of two */
+-    m -> ctxt -> width = width;
+-    m -> ctxt -> height = height;
+-
+-    m -> ctxt -> time_base= (AVRational){1,24}; // frames per second
+-    m -> ctxt -> gop_size = 10; // emit one intra frame every ten frames 
+-    m -> ctxt -> max_b_frames=1;
+-    m -> ctxt -> pix_fmt = PIX_FMT_YUV420P;
+-
+-    /* open it */
+-    if (avcodec_open2(m -> ctxt, m -> codec, NULL) < 0) {
+-        fprintf(stderr, "could not open codec\n");
++    if (avcodec_open2(m -> ctxt, m -> codec, NULL) < 0)
+         return 1;
+-    }
+ 
+-    m -> fp = fopen(filename, "wb");
+-    if (!m -> fp) {
+-        fprintf(stderr, "could not open %s\n", filename);
++    m -> picture -> format = m -> ctxt -> pix_fmt;
++    m -> picture -> width  = m -> ctxt -> width;
++    m -> picture -> height = m -> ctxt -> height;
++    if (av_frame_get_buffer(m -> picture, 0) < 0)
+         return 1;
+-    }
+ 
+-    /* alloc image and output buffer */
+-    size = 3 * m->ctxt->width * m->ctxt->height;
+-    m->outbuf_size = size;
+-    m->outbuf = malloc(m->outbuf_size);
+-
+-    m->picture->data[0] = malloc((size * 3) / 2);
+-    m->picture->data[1] = m->picture->data[0] + size;
+-    m->picture->data[2] = m->picture->data[1] + size / 4;
+-    m->picture->linesize[0] = m -> ctxt -> width;
+-    m->picture->linesize[1] = m -> ctxt -> width / 2;
+-    m->picture->linesize[2] = m -> ctxt -> width / 2;
++    m -> fp = fopen(filename, "wb");
++    if (!m -> fp)
++        return 1;
+ 
+     return 0;
+ }
+@@ -174,17 +173,43 @@
+ int
+ AddFrameToMovie(ChartMovie *m, GdkPixbuf *pixbuf, int copies)
+ {
+-    int out_size;
+-    int i;
++    int i, y;
++    int pw = gdk_pixbuf_get_width(pixbuf);
++    int ph = gdk_pixbuf_get_height(pixbuf);
++    int w = m -> ctxt -> width, h = m -> ctxt -> height;
++    size_t need = (size_t) pw * ph * 3 / 2 + 16;
++    uint8_t *lum, *cb, *cr;
+ 
+-    pixbuf_to_yuv420p(m -> picture->data[0], 
+-                      m -> picture->data[1], 
+-                      m -> picture->data[2], pixbuf);
++    if (!m -> ctxt || !m -> fp)
++        return 1;
++    if (need > m -> yuv_size) {
++        uint8_t *buf = realloc(m -> yuv, need);
++        if (!buf)
++            return 1;
++        m -> yuv = buf;
++        m -> yuv_size = need;
++    }
++    lum = m -> yuv;
++    cb  = lum + (size_t) pw * ph;
++    cr  = cb + (size_t) (pw / 2) * (ph / 2);
++    if (pw < w) w = pw & ~1;                  /* never read past the image */
++    if (ph < h) h = ph & ~1;
++
++    /* convert into a contiguous buffer, then copy rows into the frame,
++       whose rows may be padded */
++    pixbuf_to_yuv420p(lum, cb, cr, pixbuf);
+ 
+     for (i = 0 ; i < copies ; i++) {
+-        out_size = avcodec_encode_video(m -> ctxt, m -> outbuf, 
+-                                        m -> outbuf_size, m -> picture);
+-        fwrite(m -> outbuf, 1, out_size, m -> fp);
++        if (av_frame_make_writable(m -> picture) < 0)
++            return 1;
++        for (y = 0 ; y < h ; y++)
++            memcpy(m -> picture -> data[0] + y * m -> picture -> linesize[0], lum + y * pw, w);
++        for (y = 0 ; y < h / 2 ; y++) {
++            memcpy(m -> picture -> data[1] + y * m -> picture -> linesize[1], cb + y * (pw / 2), w / 2);
++            memcpy(m -> picture -> data[2] + y * m -> picture -> linesize[2], cr + y * (pw / 2), w / 2);
++        }
++        m -> picture -> pts = m -> next_pts++;
++        encode_frame(m, m -> picture);
+     }
+ 
+     return 0;
+@@ -193,28 +218,19 @@
+ void
+ CloseMovie(ChartMovie *m)
+ {
+-    int out_size;
++    static const uint8_t endcode[] = { 0x00, 0x00, 0x01, 0xb7 };
+ 
+-    /* get the delayed frames */
+-    while((out_size = avcodec_encode_video(m -> ctxt, 
+-                                        m -> outbuf, m -> outbuf_size, NULL))) {
+-         fwrite(m -> outbuf, 1, out_size, m -> fp);
+-    }
++    if (m -> ctxt && m -> fp)
++        encode_frame(m, NULL);                /* flush delayed frames */
+ 
+-    /* add sequence end code to have a real mpeg file */
+-    m->outbuf[0] = 0x00;
+-    m->outbuf[1] = 0x00;
+-    m->outbuf[2] = 0x01;
+-    m->outbuf[3] = 0xb7;
+-
+-    fwrite(m->outbuf, 1, 4, m -> fp);
+-    fclose(m -> fp);
+-    free(m->picture->data[0]);
+-    free(m->outbuf);
+-
+-    avcodec_close(m -> ctxt);
+-    av_free(m -> ctxt);
+-    av_free(m -> picture);
++    if (m -> fp) {
++        fwrite(endcode, 1, sizeof(endcode), m -> fp);  /* MPEG sequence end code */
++        fclose(m -> fp);
++    }
++    free(m -> yuv);
++    avcodec_free_context(&m -> ctxt);
++    av_frame_free(&m -> picture);
++    av_packet_free(&m -> pkt);
+ }
+ 
+ #endif
+--- a/gui/pixbuf2mpeg.h
++++ b/gui/pixbuf2mpeg.h
+@@ -25,12 +25,14 @@
+ #include "libavcodec/avcodec.h"
+ 
+ typedef struct {
+-    AVCodec        *codec;
++    const AVCodec  *codec;
+     AVCodecContext *ctxt;
+     FILE           *fp;
+     AVFrame        *picture;
+-    uint8_t        *outbuf;
+-    int             outbuf_size;
++    AVPacket       *pkt;
++    uint8_t        *yuv;
++    size_t          yuv_size;
++    int64_t         next_pts;
+ } ChartMovie;
+     
+ int InitializeMovie(ChartMovie *m, char *filename, int width, int height);

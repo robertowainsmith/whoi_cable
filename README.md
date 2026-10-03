@@ -97,6 +97,18 @@ them before relying on a result.
   and write it as an expression in `t` or as `(time, factor)` pairs. A plain
   constant crashes Cable.
 
+## The graphical interface (optional)
+
+Cable's GUI, `wcable`, can also be built and run under WSL, as a stock version
+(`wcable`) and one with the buoy patch (`wcable-free`). It uses Ubuntu's GTK 2
+packages rather than the conda environment. See [docs/GUI.md](docs/GUI.md):
+
+```bash
+scripts/setup_gui.sh      # once; installs system libraries (needs sudo)
+scripts/build_gui.sh
+wcable-free cases/slb600_waves.cbl &
+```
+
 ## Credit and licence
 
 WHOI Cable is copyright Woods Hole Oceanographic Institution, Jason Gobat,

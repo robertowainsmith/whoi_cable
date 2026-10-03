@@ -38,3 +38,8 @@ modifications are:
          (notebooks/) and documentation (README.md, docs/SETUP.md,
          docs/PATCH.md).
  
+2026-10  patches/gui-modern-ffmpeg.patch modifies gui/pixbuf2mpeg.c and
+         gui/pixbuf2mpeg.h, porting the GUI's movie export to the current
+         FFmpeg encoding interface (the original functions were removed from
+         FFmpeg). Added scripts/setup_gui.sh and scripts/build_gui.sh, which
+         build the GUI against GtkExtra 3.0.2, and docs/GUI.md.
