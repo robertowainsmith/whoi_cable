@@ -37,7 +37,16 @@ modifications are:
          (environment.yml), example input files (cases/), a plotting notebook
          (notebooks/) and documentation (README.md, docs/SETUP.md,
          docs/PATCH.md).
- 
+
+2026-10  Added the notebook designer (notebooks/cable_designer.ipynb), which
+         builds, exports and runs moorings, including random seas from JONSWAP
+         wave files it generates, and notebooks/jonswap_surface.py, which
+         rebuilds a wave file's sea surface. notebooks/plot_run.ipynb now
+         plots runs in regular waves or random seas; the earlier designer and
+         plotting notebooks were replaced by these. Added the JONSWAP example
+         case cases/slb600_jonswap.cbl; scripts/run_case.sh copies a case's
+         wave file into its run folder.
+
 2026-10  patches/gui-modern-ffmpeg.patch modifies gui/pixbuf2mpeg.c and
          gui/pixbuf2mpeg.h, porting the GUI's movie export to the current
          FFmpeg encoding interface (the original functions were removed from

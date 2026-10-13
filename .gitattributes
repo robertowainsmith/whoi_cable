@@ -6,3 +6,4 @@
 *.ipynb text eol=lf
 *.md    text eol=lf
 *.yml   text eol=lf
+*.dat   text eol=lf
