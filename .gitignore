@@ -9,3 +9,5 @@ runs/
 *.avi
 *:Zone.Identifier
 notebook_projects/
+__pycache__/
+.DS_Store

@@ -110,9 +110,13 @@ In the GUI:
 `wcable-free` only changes the behaviour of surface moorings with the forcing
 type set to **morison**; the notes in the main `README.md` apply in the GUI too.
 
-**To analyse a GUI run in the notebook,** save the `.cbl` into `cases/` and run
-it with `scripts/run_case.sh`, which writes the `.mat` file the notebook
-reads.
+**To analyse a GUI run in `plot_run.ipynb`,** save the `.cbl` into `cases/`
+and run it with `scripts/run_case.sh`, which writes the `.mat` file the
+notebook reads. Or open the `.cbl` in `notebooks/cable_designer.ipynb`
+(*Setup & projects*, path box, **Load project / CBL**) and run it there.
+
+The GUI doesn't generate random-sea wave files; use the notebook designer for
+JONSWAP seas.
 
 ## Troubleshooting
 

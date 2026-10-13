@@ -3,10 +3,12 @@
 #
 #   scripts/run_case.sh <case> [extra cable options]
 #   e.g. scripts/run_case.sh southland_front_30m
-#        scripts/run_case.sh swex_free -auto
+#        scripts/run_case.sh slb600_jonswap
+# Cable is always run with -auto; extra options are added after it.
 #
-# Results go in runs/<case>/: a copy of the .cbl, <case>.cab (Cable output),
-# <case>.mat (read by the notebook) and <case>.log (solver messages).
+# Results go in runs/<case>/: a copy of the .cbl (and of its wave file, for a
+# random sea), <case>.cab (Cable output), <case>.mat (read by
+# notebooks/plot_run.ipynb) and <case>.log (solver messages).
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -29,6 +31,15 @@ RES2MAT="$REPO/build/stock/cli/res2mat"
 OUT="$REPO/runs/$CASE"
 mkdir -p "$OUT"
 cp "$SRC" "$OUT/"
+# A random sea's wave file (wave-file = "...") is read relative to the folder
+# Cable runs in, so copy it into the run folder too.
+WAVE="$(grep -E '^[[:space:]]*wave-file[[:space:]]*=' "$SRC" | head -1 |
+        sed -E 's/^[^=]*=[[:space:]]*"?([^"[:space:]]+)"?.*/\1/' || true)"
+if [ -n "$WAVE" ] && [ "${WAVE#/}" = "$WAVE" ]; then
+    [ -f "$REPO/cases/$WAVE" ] || { echo "Wave file not found: $REPO/cases/$WAVE" >&2; exit 1; }
+    mkdir -p "$OUT/$(dirname "$WAVE")"
+    cp "$REPO/cases/$WAVE" "$OUT/$WAVE"
+fi
 cd "$OUT"
 
 echo "Running $CASE with $CABLE $* ..."

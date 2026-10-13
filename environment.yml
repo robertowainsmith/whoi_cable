@@ -1,5 +1,5 @@
 # Conda environment for building and running WHOI Cable / cable-free and the
-# plotting notebook. Create it with scripts/setup_env.sh, or by hand:
+# notebooks (cable_designer.ipynb and plot_run.ipynb). Create it with scripts/setup_env.sh, or by hand:
 #   conda env create -f environment.yml
 # Packages come from conda-forge only (no Anaconda "defaults" channel).
 name: whoi-cable
@@ -14,10 +14,11 @@ dependencies:
   - bison
   - zlib
   - patch
-  # notebook
+  # notebooks
   - python=3.12
   - numpy
   - scipy
   - matplotlib
   - ipykernel         # lets your existing Jupyter run notebooks in this environment
+  - ipywidgets        # the designer's interface
   - ffmpeg            # saves the notebook's animations as MP4

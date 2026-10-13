@@ -1,13 +1,16 @@
 """Reconstruct a WHOI CABLE JONSWAP surface for mooring animations.
 
-Usage in the notebook, after defining E and cbl_file:
+Used by plot_run.ipynb (for runs with input-type = random) and by
+cable_designer.ipynb (wave-file preview):
 
     from jonswap_surface import load_jonswap_surface
     surface = load_jonswap_surface(cbl_file)
+    eta = surface(None, x, t)
 
-The returned function has the existing surface(E, x, t) signature, so both
-surface calls in animate() can stay unchanged. E is accepted for compatibility;
-wave settings are read from cbl_file, not from the older regular-wave parser.
+The returned function has the plotting notebook's surface(E, x, t) signature.
+E is accepted for compatibility and ignored; the wave settings are read from
+cbl_file. Works for any CABLE wave file (omega, S(omega), phase per line), not
+only JONSWAP.
 
 If the wave file has moved, supply wave_dir=Path('/folder/with/wave/file').
 Otherwise the loader checks beside the .cbl and the working directory recorded
@@ -32,7 +35,8 @@ import numpy as np
 def load_jonswap_surface(cbl_file, wave_dir=None):
     """Return surface(E, x, t), with x in metres and t in run-time seconds.
 
-    x may be a scalar or any-shaped NumPy array; t is a scalar. Elevation is
+    x and t may be scalars or NumPy arrays that broadcast together (e.g. a grid
+    of x at one time for an animation frame, or the buoy's x(t) against t). Elevation is
     measured upward from mean sea level, with waves travelling toward +x.
     Supports the supplied CABLE random wave-file format: omega, S(omega), phase.
     """
@@ -48,10 +52,10 @@ def load_jonswap_surface(cbl_file, wave_dir=None):
     env = match.group(1)
     if not re.search(r"\binput-type\s*=\s*random\b", env):
         raise ValueError("This helper requires input-type = random.")
-    match = re.search(r'\bwave-file\s*=\s*"([^"\n]+)"', env)
+    match = re.search(r'\bwave-file\s*=\s*(?:"([^"\n]+)"|(\S+))', env)
     if match is None:
-        raise ValueError("No quoted wave-file entry found in Environment.")
-    wave_name = Path(match.group(1)).expanduser()
+        raise ValueError("No wave-file entry found in Environment.")
+    wave_name = Path(match.group(1) or match.group(2)).expanduser()
 
     def number(block, key, default=None):
         pattern = rf"(?m)^\s*{re.escape(key)}\s*=\s*([-+0-9.eEdD]+)"
@@ -116,12 +120,13 @@ def load_jonswap_surface(cbl_file, wave_dir=None):
     ) / depth
 
     def surface(E, x, t):
-        """Elevation above mean sea level; E retained for existing animation."""
-        x = np.asarray(x, dtype=float)
-        t = float(t)
-        ramp = np.clip(t / ramp_time, 0.0, 1.0) if ramp_time else 1.0
-        angles = x[..., None] * k - omega * t - phase
-        eta = ramp * np.sum(amplitude * np.cos(angles), axis=-1)
+        """Elevation above mean sea level; E is accepted for compatibility and unused."""
+        x, t = np.broadcast_arrays(np.asarray(x, dtype=float), np.asarray(t, dtype=float))
+        ramp = np.clip(t / ramp_time, 0.0, 1.0) if ramp_time else np.ones_like(t)
+        eta = np.zeros(x.shape)
+        for a, kk, om, ph in zip(amplitude, k, omega, phase):  # loop keeps memory small for long series
+            eta += a * np.cos(kk * x - om * t - ph)
+        eta *= ramp
         return float(eta) if eta.ndim == 0 else eta
 
     return surface

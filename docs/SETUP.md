@@ -1,12 +1,13 @@
 # Setting up and running cable-free on Windows (WSL + conda)
 
 These steps go from a Windows machine to running the `southland_front_30m`
-example and plotting it in a Jupyter notebook. They take about 15 minutes,
-most of it waiting for downloads.
+example, plotting it, and designing and running your own moorings in the
+notebook designer. Setup takes about 15 minutes, most of it waiting for
+downloads.
 
 Everything runs inside WSL (Ubuntu), in one conda environment called
 **`whoi-cable`**. That environment holds the C compiler and build tools,
-Cable itself once built, and the Python packages the notebook uses. No `sudo`
+Cable itself once built, and the Python packages the notebooks use. No `sudo`
 or system packages are needed.
 
 The guide assumes you already have **Jupyter Notebook** (or Jupyter Lab)
@@ -74,11 +75,12 @@ This:
 
 - creates the `whoi-cable` conda environment from `environment.yml`: the C
   compiler, `make`, `flex`, `bison`, `zlib` and `patch` for building Cable;
-  Python with NumPy, SciPy and Matplotlib; `ipykernel`; and `ffmpeg` for
-  saving animations. This takes a few minutes the first time.
+  Python with NumPy, SciPy and Matplotlib; `ipykernel`; `ipywidgets` for the
+  designer's interface; and `ffmpeg` for saving animations. This takes a few
+  minutes the first time.
 - registers the environment as a Jupyter kernel called
-  **Python (whoi-cable)**, so the Jupyter you already have can run the notebook
-  in this environment.
+  **Python (whoi-cable)**, so the Jupyter you already have can run the
+  notebooks in this environment.
 
 It's safe to run again: if the environment exists, it's updated to match
 `environment.yml`. If you get `Permission denied`, run `chmod +x scripts/*.sh`
@@ -136,14 +138,15 @@ Done in 20 s. Output in /home/<you>/whoi_cable/runs/southland_front_30m
 |---|---|
 | `southland_front_30m.cbl` | a copy of the input file that was run |
 | `southland_front_30m.cab` | Cable's output |
-| `southland_front_30m.mat` | the output converted by `res2mat`; the notebook reads this |
+| `southland_front_30m.mat` | the output converted by `res2mat`; `plot_run.ipynb` reads this |
 | `southland_front_30m.log` | the solver's messages |
 
 Run `scripts/run_case.sh` with no arguments to list all the example cases.
-Extra Cable options go after the case name, for example
-`scripts/run_case.sh swex_free -auto`.
+Extra Cable options go after the case name. The script always runs Cable with
+`-auto`. For a random-sea case such as `slb600_jonswap`, it also copies the
+wave file into the run folder.
 
-## 7. Plot it in the notebook
+## 7. Start Jupyter
 
 Start your Jupyter from the repository folder, in whichever environment it's
 installed in. For example, if it's in `base`, open a second terminal and run:
@@ -154,56 +157,101 @@ conda activate base
 jupyter notebook --no-browser
 ```
 
-(Use `jupyter lab --no-browser` if you prefer Jupyter Lab. If you don't have
-Jupyter yet, install it once with `conda install -n base -c conda-forge notebook`.)
+(Use `jupyter lab --no-browser` if you prefer Jupyter Lab.) If you don't have
+Jupyter yet, or the designer's interface doesn't appear (step 9), install it
+with widget support once:
+
+```bash
+conda install -n base -c conda-forge notebook jupyterlab_widgets
+```
 
 Jupyter prints a link starting `http://localhost:8888/...?token=...`.
 **Ctrl+click** it, or copy it into a web browser on Windows. Leave that
 terminal open while you work; **Ctrl+C** there stops Jupyter.
 
+Both notebooks are set to use the **Python (whoi-cable)** kernel, shown in the
+top right. If Jupyter asks which kernel to use, or shows another one, choose
+**Kernel → Change Kernel → Python (whoi-cable)**.
+
+**Opening the files from Windows.** To see a run folder (and the MP4s) in
+Windows Explorer, run `explorer.exe .` in the WSL terminal from that folder.
+The address bar shows the Windows path, something like
+`\\wsl.localhost\Ubuntu\home\<you>\whoi_cable\runs\southland_front_30m`.
+
+**Using VS Code instead of the browser.** Install VS Code on Windows with its
+WSL extension, run `code .` in the repository folder, open a notebook, and
+choose **Python (whoi-cable)** (or the `whoi-cable` conda environment) as the
+kernel.
+
+## 8. Plot the example
+
 In the browser:
 
-1. Open `notebooks/plot_run.ipynb`. It's set to use the **Python (whoi-cable)**
-   kernel, shown in the top right. If Jupyter asks which kernel to use, or
-   shows another one, choose **Kernel → Change Kernel → Python (whoi-cable)**.
-2. Check `RUN_NAME = "southland_front_30m"` in the **Settings** cell.
+1. Open `notebooks/plot_run.ipynb`.
+2. In the **Settings** cell, check `RUN_NAME = "southland_front_30m"` and
+   `RUN_DIR_OVERRIDE = None` (the run is in `runs/southland_front_30m/`).
 3. Run all cells: **Run → Run All Cells** (Jupyter Lab) or
    **Cell → Run All** (classic Notebook).
 
 The **Summary** cell should print:
 
 ```
-Run "southland_front_30m": buoy "ld1" (axisymmetric), height 0.48 m, static draft 0.24 m
+Run "southland_front_30m": buoy "ld1" (axisymmetric), height 0.48 m, static draft 0.23 m
 First fully submerged at t = 8.8 s (surface current 0.70 m/s)
 Last  fully submerged at t = 210.0 s (surface current 0.70 m/s)
 Time fully submerged: 113.1 s of 210.0 s
-Deepest at t = 186.7 s: buoy top 1.16 m below the local surface
+Deepest at t = 194.7 s: buoy top 1.16 m below the local surface
 Max tension: 0.16 kN at buoy, 0.16 kN at anchor
 
 Anchor: worst at t = 17.0 s (H = 0.12 kN, V = 0.10 kN), mu = 0.5, safety factor 1.5
         needs 0.52 kN in water = 61 kg of material with density 7850 kg/m^3
 ```
 
-followed by three figures and two animations. The animations are saved as
-`southland_front_30m_animation.mp4` and `southland_front_30m_tension.mp4` in
-the run folder and shown in the notebook. Building them takes a few minutes for
-a 210 s run; to make it faster, raise `FRAME_STEP` in the Settings cell (use
-every n-th snapshot), or set `MAKE_ANIMATIONS = False`.
+followed by three figures and an animation of the mooring with the line
+coloured by tension. The animation is saved as
+`southland_front_30m_animation.mp4` in the run folder and shown in the
+notebook. Building it takes a few minutes for a 210 s run; to make it faster,
+raise `FRAME_STEP` in the Settings cell (use every n-th snapshot), or set
+`MAKE_ANIMATIONS = False`.
 
 The anchor estimate uses the friction coefficient, safety factor and anchor
 density set in the Settings cell.
 
-**Opening the files from Windows.** To see the run folder (and the MP4s) in
-Windows Explorer, run `explorer.exe .` in the WSL terminal from that folder.
-The address bar shows the Windows path, something like
-`\\wsl.localhost\Ubuntu\home\<you>\whoi_cable\runs\southland_front_30m`.
+## 9. Design and run a mooring in the designer
 
-**Using VS Code instead of the browser.** Install VS Code on Windows with its
-WSL extension, run `code .` in the repository folder, open
-`notebooks/plot_run.ipynb`, and choose **Python (whoi-cable)** (or the
-`whoi-cable` conda environment) as the kernel.
+1. Open `notebooks/cable_designer.ipynb` and run all cells. The interface
+   appears below the long application-code cell. Leave `CABLE_ROOT = None`:
+   the notebook finds the repository itself.
+2. On **Setup & projects**, check the repository folder and that the solvers
+   were found (click **Build both solvers** if not), choose a starting
+   configuration, for example `slb600_jonswap` or `slb600_waves`, and click
+   **Load template / new**. Change the case name before saving a variant.
+3. Edit the mooring on **Parts** and **Mooring**, and the conditions on
+   **Forcing & solver**:
+   - *Regular wave:* wave height and period.
+   - *Random sea (wave file):* open **Generate a JONSWAP wave file**, set Hs,
+     Tp, γ, repeat period, first harmonic, number of components and one or more
+     seeds, and click **Generate**. The files go to `notebook_projects/waves/`.
+     Choose one, then click **Preview / check wave file** to see its spectrum
+     and the sea surface Cable will apply.
+4. On **Run & results**, click **Check CABLE syntax**, then **Run solver**.
+   The log streams into the panel; **Stop** ends a run early and keeps its
+   output. When it finishes, the static shape, buoy height and tension are
+   plotted, and the panel prints the `RUN_NAME` and `RUN_DIR_OVERRIDE` values
+   to use in `plot_run.ipynb` for the full summary and animation.
+5. **Save project + CBL** on *Setup & projects* saves the project to
+   `notebook_projects/<case>/`, where it's listed under *Saved projects* next
+   time.
 
-## 8. Running Cable by hand
+Each run gets its own folder, `runs/<case>_<timestamp>/`, with the `.cbl`,
+the wave file, the log, Cable's output and the `.mat` file, so runs never
+overwrite each other. To bring an existing `.cbl` into the designer, enter its
+path on *Setup & projects* and click **Convert CBL → project JSON**; files the
+forms can't represent load in raw mode on the **CABLE input** tab instead. The
+notebook's last cells show the same steps from code, e.g. to write wave files
+for a batch of seeds.
+
+## 10. Running Cable by hand
 
 The scripts are a convenience. With `whoi-cable` active, the equivalent
 commands for any input file are:
@@ -215,12 +263,14 @@ res2mat -in mycase.cab -out mycase.mat -totals
 
 Use `cable` instead of `cable-free` for stock Cable. `-snap_dt` sets how often
 whole-mooring snapshots are saved, which sets how smooth the animations are.
-To plot a run made this way, put it in `runs/<name>/` (with its `.cbl`), or set
-`RUN_DIR` directly in the notebook's Setup cell.
+For a random sea, run it from a folder holding the wave file. To plot a run
+made this way, set `RUN_DIR_OVERRIDE` in `plot_run.ipynb` to the folder holding
+its `.cbl` and `.mat` (and wave file).
 
-## 9. Making your own case
+## 11. Making a case by hand
 
-Copy an example, edit it, and run it by name:
+The designer (step 9) is the easiest way. To work on `.cbl` files directly
+instead, copy an example, edit it, and run it by name:
 
 ```bash
 cp cases/southland_front_30m.cbl cases/mycase.cbl
@@ -228,10 +278,12 @@ nano cases/mycase.cbl          # or edit it in VS Code: code cases/mycase.cbl
 scripts/run_case.sh mycase
 ```
 
-Then set `RUN_NAME = "mycase"` in the notebook. The notes in the main
-`README.md` cover the input settings that matter for `cable-free`.
+Then set `RUN_NAME = "mycase"` in `plot_run.ipynb`. For a random sea, put the
+wave file in `cases/` too and refer to it by name (`wave-file = "myfile.dat"`).
+The notes in the main `README.md` cover the input settings that matter for
+`cable-free`.
 
-## 10. Updating
+## 12. Updating
 
 ```bash
 cd ~/whoi_cable
@@ -246,7 +298,7 @@ scripts/build.sh
 ```bash
 conda env remove -n whoi-cable
 jupyter kernelspec uninstall whoi-cable    # run where your Jupyter is installed
-rm -rf ~/whoi_cable
+rm -rf ~/whoi_cable            # includes runs/ and notebook_projects/
 ```
 
 ## Troubleshooting
@@ -265,5 +317,11 @@ rm -rf ~/whoi_cable
 | The notebook prints `Note: this kernel runs Python from ...` | It's using another kernel. Choose **Kernel → Change Kernel → Python (whoi-cable)** |
 | `WARNING: the static solve did not converge` | Raise `static-outer-iterations` in the `.cbl`. If the buoy starts at the surface, try `-auto` |
 | A run stops early or produces nonsense | Reduce `time-step` in the `.cbl` (light buoys on near-taut lines need 0.005 s) |
-| The notebook can't find the `.mat` file | Check `RUN_NAME`, that the case was run with `scripts/run_case.sh`, or set `RUN_DIR` directly |
+| `plot_run.ipynb` can't find the `.mat` file | Check `RUN_NAME` (the case name, without the timestamp) and `RUN_DIR_OVERRIDE` (the run folder for a designer run, `None` for `scripts/run_case.sh`) |
+| `Wave file ... not found` in `plot_run.ipynb` | The run folder has no copy of the wave file named in the `.cbl`. Set `JONSWAP_DIR` to the folder holding it |
+| `ModuleNotFoundError: No module named 'jonswap_surface'` | Open the notebook from the repository's `notebooks/` folder, where `jonswap_surface.py` is, or set `JONSWAP_SURFACE_DIR` in the designer |
 | `ffmpeg not found, so no video saved` | Rerun `scripts/setup_env.sh` to update the environment |
+| The designer prints `ModuleNotFoundError: No module named 'ipywidgets'` | Rerun `scripts/setup_env.sh` (which installs it), then restart the kernel |
+| The designer's last cell runs but no interface appears (or shows a model id / `Error displaying widget`) | The Jupyter you started has no widget support. Install it where Jupyter runs, e.g. `conda install -n base -c conda-forge jupyterlab_widgets`, then restart Jupyter and reload the page |
+| `Build requires the activated whoi-cable conda environment` from **Build both solvers** | Build in a terminal instead (`conda activate whoi-cable`, `scripts/build.sh`); the designer then finds the programs in `build/` |
+| The designer's wave-file check reports a problem | Cable needs evenly spaced `omega`, no header lines, at most 999 lines and a newline at the end; files made by the designer's generator meet these |
