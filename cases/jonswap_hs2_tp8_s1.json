@@ -1,0 +1,16 @@
+{
+  "generator": "WHOI Cable Notebook Designer 1.1.0-jonswap",
+  "spectrum": "JONSWAP",
+  "Hs": 2.0,
+  "Tp": 8.0,
+  "gamma": 3.3,
+  "repeat_period": 256.0,
+  "first_harmonic": 12,
+  "n_components": 80,
+  "seed": 1,
+  "omega_range": [
+    0.2945243112740431,
+    2.2334760271614935
+  ],
+  "created": "2026-10-13T17:11:15"
+}
