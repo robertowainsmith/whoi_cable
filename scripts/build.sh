@@ -3,7 +3,8 @@
 # with the compilers in the "whoi-cable" conda environment, and install the
 # programs into that environment, so they're available whenever it is active:
 #   cable             stock WHOI Cable
-#   cable-free        with patches/cable-free-surface-buoy.patch applied
+#   cable-free        with patches/cable-free-surface-buoy.patch and
+#                     patches/cable-wave-stretching.patch applied, in that order
 #   res2mat, res2asc  output converters (unchanged by the patch)
 #
 #   conda activate whoi-cable
@@ -15,7 +16,9 @@ set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD="$REPO/build"
-PATCH="$REPO/patches/cable-free-surface-buoy.patch"
+# patches for cable-free, applied in this order (the second builds on the first)
+PATCHES=("$REPO/patches/cable-free-surface-buoy.patch"
+         "$REPO/patches/cable-wave-stretching.patch")
 ENV_NAME="whoi-cable"
 
 if [ "${CONDA_DEFAULT_ENV:-}" != "$ENV_NAME" ] || [ -z "${CONDA_PREFIX:-}" ]; then
@@ -104,8 +107,11 @@ build_variant () {
     # copy the source tree, leaving out build products, runs and git metadata
     (cd "$REPO" && tar cf - --exclude=./build --exclude=./runs --exclude=./.git .) | (cd "$dir" && tar xf -)
     if [ "$name" = free ]; then
-        (cd "$dir" && patch -p1 --quiet < "$PATCH")
-        echo "    applied $(basename "$PATCH")"
+        for p in "${PATCHES[@]}"; do
+            (cd "$dir" && patch -p1 --quiet < "$p") || {
+                echo "Could not apply $(basename "$p"); see the messages above." >&2; exit 1; }
+            echo "    applied $(basename "$p")"
+        done
     fi
     # Cable links its command-line programs statically; conda provides shared
     # libraries, so link them dynamically instead (in this build copy only)

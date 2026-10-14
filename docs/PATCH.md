@@ -5,6 +5,10 @@ dynamic run be pulled under by current or waves, and resurface when the load
 eases. `scripts/build.sh` applies it to a copy of the source to build
 `cable-free`.
 
+`cable-free` also carries a second patch, `cable-wave-stretching.patch`, which
+changes how wave velocities are evaluated near the surface (Wheeler
+stretching). It is described separately in [STRETCHING.md](STRETCHING.md).
+
 ## Summary
 
 Stock Cable can't simulate this: with Morison forcing it fixes the buoy's
@@ -182,7 +186,9 @@ observations or another dynamic code.
 4. **Wave forces.** Waves act through the change in draft plus Morison drag
    and inertia at the base node. There is no diffraction, radiation damping or
    slamming. That's reasonable for floats small compared with the wavelength,
-   not for large buoys in short waves.
+   not for large buoys in short waves. The orbital flow at the base node uses
+   Wheeler stretching (see [STRETCHING.md](STRETCHING.md)); without it the
+   buoy is pushed up-wave.
 5. **Current on the buoy.** The current is sampled at one depth, the middle of
    the submerged part.
 6. **No tilt.** The buoy stays upright. A real buoy leaning on its line

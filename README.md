@@ -13,13 +13,21 @@ position relative to the local wave surface. It touches three source files and
 only affects 2D surface moorings with Morison forcing. See
 [docs/PATCH.md](docs/PATCH.md) for what changed, why, and its limitations.
 
+A second patch adds **wave kinematic stretching**. Stock Cable sets the wave
+orbital velocity to zero above the mean water level, so a buoy riding the
+surface feels no flow on crests but the full flow in troughs, and is pushed
+steadily up-wave. `cable-free` uses Wheeler stretching instead, which carries
+the kinematics up to the instantaneous surface. Set `CABLE_STRETCHING=none`
+to get the stock behaviour back for comparison. See
+[docs/STRETCHING.md](docs/STRETCHING.md).
+
 The upstream source is left untouched. The build script compiles two programs
 side by side:
 
 | Program (installed into the `whoi-cable` environment) | What it is |
 |---|---|
 | `cable` | stock WHOI Cable |
-| `cable-free` | WHOI Cable with `patches/cable-free-surface-buoy.patch` applied |
+| `cable-free` | WHOI Cable with `patches/cable-free-surface-buoy.patch` and `patches/cable-wave-stretching.patch` applied |
 | `res2mat`, `res2asc` | Cable's output converters (unchanged) |
 
 Two notebooks sit on top of these:
@@ -119,12 +127,12 @@ is right unless you've moved it.
 | Folder | Contents |
 |---|---|
 | `cli/`, `model/`, `solver/`, `include/`, `results/`, `gui/`, `widgets/`, `examples/` | upstream WHOI Cable source, unchanged (`examples/` holds Cable's own example inputs) |
-| `patches/` | `cable-free-surface-buoy.patch` (the change that makes `cable-free`) and `gui-modern-ffmpeg.patch` (for the optional GUI) |
+| `patches/` | `cable-free-surface-buoy.patch` and `cable-wave-stretching.patch` (the changes that make `cable-free`, applied in that order) and `gui-modern-ffmpeg.patch` (for the optional GUI) |
 | `scripts/` | `setup_env.sh` (one-off: conda environment and Jupyter kernel), `build.sh` (build both programs), `run_case.sh` (run a case from `cases/`), `setup_gui.sh` and `build_gui.sh` (the optional GUI) |
 | `cases/` | example input files (`.cbl`) for `cable-free`, and the JONSWAP wave file used by `slb600_jonswap` |
 | `notebooks/` | `cable_designer.ipynb`, `plot_run.ipynb`, and `jonswap_surface.py` (rebuilds a wave file's sea surface; used by both) |
 | `environment.yml` | the `whoi-cable` conda environment: compilers and build tools, Python packages, `ipykernel`, `ipywidgets` and `ffmpeg` (conda-forge only) |
-| `docs/` | upstream Cable manuals (`WHOI_Cable_manual-2.0.pdf`, `cable_manual.html`), plus `SETUP.md` (setup and use), `PATCH.md` (the patch: changes, justification, limitations) and `GUI.md` (the optional GUI) |
+| `docs/` | upstream Cable manuals (`WHOI_Cable_manual-2.0.pdf`, `cable_manual.html`), plus `SETUP.md` (setup and use), `PATCH.md` (the free-floating buoy patch: changes, justification, limitations), `STRETCHING.md` (the wave stretching patch) and `GUI.md` (the optional GUI) |
 
 `build/`, `runs/` and `notebook_projects/` are created by the scripts and
 notebooks and are not tracked by git. Before committing changes to a notebook,
@@ -148,6 +156,7 @@ the designer, and all run with `scripts/run_case.sh <case>`.
 | `slb600_pulldown` | SL-B600 mooring with the current ramped 0.2 → 2 → 0.2 m/s; buoy pulled under and resurfacing | 35 s |
 | `swex_pulldown` | Cable's SWEX example mooring with the current ramped 1 → 4.5 → 1 m/s | 25 s |
 | `swex_free` | SWEX mooring in 2 m, 8 s waves | 15 s |
+| `stretching_demo` | SL-B600 on 66 m of chain and sinking polyester in 30 m (slack); 3 m, 12 s waves, no current. Run with and without `CABLE_STRETCHING=none` to see the up-wave drift that stretching removes | 1 min |
 | `wirewalker_southland` | Wirewalker profiler mooring in 100 m, translated from a ProteusDS Designer template | 2.5 min |
 
 \* on a typical laptop core; yours will differ.
