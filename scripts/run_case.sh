@@ -5,6 +5,8 @@
 #   e.g. scripts/run_case.sh southland_front_30m
 #        scripts/run_case.sh slb600_jonswap
 # Cable is always run with -auto; extra options are added after it.
+# Wave kinematics use Wheeler stretching unless CABLE_STRETCHING is set, e.g.
+#   CABLE_STRETCHING=none scripts/run_case.sh slb600_waves   (stock Cable kinematics)
 #
 # Results go in runs/<case>/: a copy of the .cbl (and of its wave file, for a
 # random sea), <case>.cab (Cable output), <case>.mat (read by
@@ -42,7 +44,7 @@ if [ -n "$WAVE" ] && [ "${WAVE#/}" = "$WAVE" ]; then
 fi
 cd "$OUT"
 
-echo "Running $CASE with $CABLE $* ..."
+echo "Running $CASE with $CABLE $* (wave stretching: ${CABLE_STRETCHING:-wheeler}) ..."
 start=$(date +%s)
 if ! "$CABLE" -in "$CASE.cbl" -out "$CASE.cab" -terminals -sample 0.1 -snap_dt 0.2 -auto -quiet "$@" > "$CASE.log" 2>&1; then
     echo "cable-free failed; last lines of $OUT/$CASE.log:" >&2
